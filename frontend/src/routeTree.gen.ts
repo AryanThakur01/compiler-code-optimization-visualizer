@@ -12,6 +12,7 @@
 
 import { Route as rootRoute } from './routes/__root'
 import { Route as AboutImport } from './routes/about'
+import { Route as CodeAreaImport } from './routes/CodeArea'
 import { Route as IndexImport } from './routes/index'
 import { Route as AuthIndexImport } from './routes/auth/index'
 import { Route as AuthVerifyIndexImport } from './routes/auth/verify/index'
@@ -21,6 +22,12 @@ import { Route as AuthVerifyIndexImport } from './routes/auth/verify/index'
 const AboutRoute = AboutImport.update({
   id: '/about',
   path: '/about',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const CodeAreaRoute = CodeAreaImport.update({
+  id: '/CodeArea',
+  path: '/CodeArea',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -53,6 +60,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexImport
       parentRoute: typeof rootRoute
     }
+    '/CodeArea': {
+      id: '/CodeArea'
+      path: '/CodeArea'
+      fullPath: '/CodeArea'
+      preLoaderRoute: typeof CodeAreaImport
+      parentRoute: typeof rootRoute
+    }
     '/about': {
       id: '/about'
       path: '/about'
@@ -81,6 +95,7 @@ declare module '@tanstack/react-router' {
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/CodeArea': typeof CodeAreaRoute
   '/about': typeof AboutRoute
   '/auth': typeof AuthIndexRoute
   '/auth/verify': typeof AuthVerifyIndexRoute
@@ -88,6 +103,7 @@ export interface FileRoutesByFullPath {
 
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/CodeArea': typeof CodeAreaRoute
   '/about': typeof AboutRoute
   '/auth': typeof AuthIndexRoute
   '/auth/verify': typeof AuthVerifyIndexRoute
@@ -96,6 +112,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
+  '/CodeArea': typeof CodeAreaRoute
   '/about': typeof AboutRoute
   '/auth/': typeof AuthIndexRoute
   '/auth/verify/': typeof AuthVerifyIndexRoute
@@ -103,15 +120,16 @@ export interface FileRoutesById {
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about' | '/auth' | '/auth/verify'
+  fullPaths: '/' | '/CodeArea' | '/about' | '/auth' | '/auth/verify'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/auth' | '/auth/verify'
-  id: '__root__' | '/' | '/about' | '/auth/' | '/auth/verify/'
+  to: '/' | '/CodeArea' | '/about' | '/auth' | '/auth/verify'
+  id: '__root__' | '/' | '/CodeArea' | '/about' | '/auth/' | '/auth/verify/'
   fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CodeAreaRoute: typeof CodeAreaRoute
   AboutRoute: typeof AboutRoute
   AuthIndexRoute: typeof AuthIndexRoute
   AuthVerifyIndexRoute: typeof AuthVerifyIndexRoute
@@ -119,6 +137,7 @@ export interface RootRouteChildren {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CodeAreaRoute: CodeAreaRoute,
   AboutRoute: AboutRoute,
   AuthIndexRoute: AuthIndexRoute,
   AuthVerifyIndexRoute: AuthVerifyIndexRoute,
@@ -135,6 +154,7 @@ export const routeTree = rootRoute
       "filePath": "__root.tsx",
       "children": [
         "/",
+        "/CodeArea",
         "/about",
         "/auth/",
         "/auth/verify/"
@@ -142,6 +162,9 @@ export const routeTree = rootRoute
     },
     "/": {
       "filePath": "index.tsx"
+    },
+    "/CodeArea": {
+      "filePath": "CodeArea.tsx"
     },
     "/about": {
       "filePath": "about.tsx"

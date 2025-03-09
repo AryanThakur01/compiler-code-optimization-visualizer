@@ -10,11 +10,18 @@ export default function CodeOptimizer() {
   const [optimizedCode, setOptimizedCode] = useState('')
 
   function handleOptimize() {
-    setOptimizedCode(inputCode)
+    fetch('http://localhost:5000/optimize', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: inputCode }),
+    })
+      .then((response) => response.json())
+      .then((data) => setOptimizedCode(data.optimized_code))
+      .catch((error) => console.error('Error optimizing code:', error))
   }
 
   return (
-    <div className="flex flex-col lg:flex-row gap-5 p-4 min-h-screen w-full bg-gray-900 text-white">
+    <div className="relative bg-card flex flex-col lg:flex-row gap-5 p-4 min-h-screen w-full text-white pt-20">
       {/* Tabs for Small Screens */}
       <div className="block lg:hidden w-full">
         <Tabs defaultValue="input" className="w-full">
@@ -38,9 +45,9 @@ export default function CodeOptimizer() {
                 value={inputCode}
                 onChange={(e) => setInputCode(e.target.value)}
                 placeholder="Paste your code here..."
-                className="flex-grow min-h-[300px] p-3 bg-gray-900 text-white border border-gray-700 rounded-lg resize-none"
+                className="flex-grow min-h-[300px] p-3 bg-gray-900 text-foreground border border-gray-700 rounded-lg resize-none"
               />
-              <Button onClick={handleOptimize} className="mt-4 bg-blue-500 hover:bg-blue-600 w-full">
+              <Button onClick={handleOptimize} className="mt-4 bg-blue-500 hover:bg-blue-600 w-full cursor-pointer">
                 Optimize Code
               </Button>
             </motion.div>

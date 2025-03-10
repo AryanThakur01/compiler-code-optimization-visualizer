@@ -1,20 +1,25 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Textarea } from '@/components/ui/textarea'
-import { Button } from '@/components/ui/button'
 import { Terminal } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import Numbering from './Numbering'
+import LoadingButton from './ui/LoadingButton'
 
 export default function CodeOptimizer() {
   const [inputCode, setInputCode] = useState('')
   const [optimizedCode, setOptimizedCode] = useState('')
   const [selectedLanguage, setSelectedLanguage] = useState('C++')
-  const [errorMessage, setErrorMessage] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    setInputCode('')
+    setOptimizedCode('')
+  }, [selectedLanguage])
 
   async function handleOptimize() {
-    setErrorMessage('')
+    setLoading(true)
+
     const languageRoutes: { [key: string]: string } = {
       'C++': 'cpp',
       C: 'c',
@@ -38,16 +43,17 @@ export default function CodeOptimizer() {
       const data = await response.json()
       setOptimizedCode(data.optimized_code || 'No optimizations found.')
     } catch (error) {
-      setErrorMessage((error as Error).message)
       console.error('Error optimizing code:', (error as Error).message)
+    } finally {
+      setLoading(false)
     }
   }
 
   return (
-    <div className="relative bg-card flex flex-col lg:flex-row gap-5 p-4 min-h-screen w-full text-white pt-20">
+    <div className="relative bg-input flex flex-col lg:flex-row gap-5 p-4 min-h-[917px] w-full text-foreground pt-20 rounded-2xl">
       {/* Tabs for Small Screens */}
       <div className="block lg:hidden w-full">
-        <Tabs defaultValue="input" className="w-full">
+        <Tabs defaultValue="input" className="w-full bg-sidebar-ring p-2 rounded-2xl">
           <TabsList className="grid grid-cols-2 w-full">
             <TabsTrigger value="input">Paste Code</TabsTrigger>
             <TabsTrigger value="output">Optimized Code</TabsTrigger>
@@ -58,20 +64,20 @@ export default function CodeOptimizer() {
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
-              className="p-5 bg-gray-800 rounded-lg shadow-lg flex flex-col"
+              className="p-5 bg-sidebar rounded-lg shadow-2xl flex flex-col"
             >
               <div className="flex items-center gap-2 mb-3">
-                <Terminal className="size-5 text-blue-400" />
+                <Terminal className="size-5 text-primary" />
                 <div className="flex items-center justify-between gap-5">
                   <h2 className="text-lg font-semibold">Paste Your Code</h2>
                   <div className="text-2xl">
                     <Select onValueChange={setSelectedLanguage} value={selectedLanguage}>
-                      <SelectTrigger className="w-[120px] p-2 bg-gray-800 text-white border border-gray-700 rounded-lg shadow-md">
+                      <SelectTrigger className="w-[120px] p-2 bg-card text-foreground border border-border rounded-lg shadow-2xl">
                         <SelectValue placeholder="Select Language" />
                       </SelectTrigger>
-                      <SelectContent className="bg-gray-900 text-white rounded-lg shadow-lg">
+                      <SelectContent className="bg-popover text-foreground rounded-lg shadow-2xl">
                         {['C', 'C++', 'Java', 'Python'].map((lang) => (
-                          <SelectItem key={lang} value={lang} className="hover:bg-gray-700 p-2 rounded-md">
+                          <SelectItem key={lang} value={lang} className="hover:bg-muted p-2 rounded-md">
                             {lang}
                           </SelectItem>
                         ))}
@@ -81,18 +87,19 @@ export default function CodeOptimizer() {
                 </div>
               </div>
               <div className="flex">
-                {/* Line numbering and Textarea */}
-                <Numbering text={inputCode} />
                 <Textarea
                   value={inputCode}
                   onChange={(e) => setInputCode(e.target.value)}
                   placeholder="Paste your code here . . . ."
-                  className="flex-grow min-h-[300px] p-3 bg-gray-900 text-foreground border border-gray-700 rounded-lg resize-none font-mono"
+                  className="flex-grow min-h-[609px] p-3 bg-background text-foreground border border-border rounded-lg resize-none font-mono"
                 />
               </div>
-              <Button onClick={handleOptimize} className="mt-4 bg-blue-500 hover:bg-blue-600 w-full cursor-pointer">
-                Optimize Code
-              </Button>
+              <LoadingButton
+                loading={loading}
+                onClick={handleOptimize}
+                text="Optimize Code"
+                className="mt-4 w-full bg-primary text-primary-foreground"
+              />
             </motion.div>
           </TabsContent>
 
@@ -101,22 +108,17 @@ export default function CodeOptimizer() {
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
-              className="p-5 bg-gray-800 rounded-lg shadow-lg flex flex-col"
+              className="p-5 bg-sidebar rounded-lg shadow-2xl flex flex-col"
             >
               <div className="flex items-center gap-2 mb-3">
                 <Terminal className="size-5 text-green-400" />
                 <h2 className="text-lg font-semibold">Optimized Code</h2>
               </div>
               <div className="flex">
-                {/* Line numbering and Textarea */}
-                <Numbering text={optimizedCode} />
                 <Textarea
                   value={optimizedCode}
                   readOnly
-                  className="flex-grow min-h-[300px] p-3 bg-gray-900 text-white border border-gray-700 rounded-lg resize-none"
-                  style={{
-                    lineHeight: '2rem',
-                  }}
+                  className="flex-grow min-h-[681px] p-3 bg-background text-foreground border border-border rounded-lg resize-none"
                 />
               </div>
             </motion.div>
@@ -131,25 +133,42 @@ export default function CodeOptimizer() {
           initial={{ opacity: 0, x: -30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.4 }}
-          className="flex-1 p-5 bg-gray-800 rounded-lg shadow-lg flex flex-col"
+          className="flex-1 p-5 bg-sidebar text-card-foreground rounded-lg shadow-2xl flex flex-col"
         >
           <div className="flex items-center gap-2 mb-3">
-            <Terminal className="size-5 text-blue-400" />
-            <h2 className="text-lg font-semibold">Paste Your Code</h2>
+            <Terminal className="size-5 text-primary" />
+            <div className="flex items-center justify-between gap-5">
+              <h2 className="text-lg font-semibold">Paste Your Code</h2>
+              <div className="text-2xl">
+                <Select onValueChange={setSelectedLanguage} value={selectedLanguage}>
+                  <SelectTrigger className="w-[120px] p-2 bg-secondary text-secondary-foreground border border-border rounded-lg shadow-2xl">
+                    <SelectValue placeholder="Select Language" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover text-popover-foreground rounded-lg shadow-2xl">
+                    {['C', 'C++', 'Java', 'Python'].map((lang) => (
+                      <SelectItem key={lang} value={lang} className="hover:bg-muted p-2 rounded-md">
+                        {lang}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </div>
           <div className="flex">
-            {/* Line numbering and Textarea */}
-            <Numbering text={inputCode} />
             <Textarea
               value={inputCode}
               onChange={(e) => setInputCode(e.target.value)}
               placeholder="Paste your code here..."
-              className="flex-grow min-h-[300px] p-3 bg-gray-900 text-white border border-gray-700 rounded-lg resize-none"
+              className="flex-grow min-h-[671px] p-3 bg-background text-foreground border border-border rounded-lg resize-none"
             />
           </div>
-          <Button onClick={handleOptimize} className="mt-4 bg-blue-500 hover:bg-blue-600 w-full">
-            Optimize Code
-          </Button>
+          <LoadingButton
+            loading={loading}
+            onClick={handleOptimize}
+            text="Optimize Code"
+            className="mt-4 w-full bg-primary text-primary-foreground"
+          />
         </motion.div>
 
         {/* Right Terminal */}
@@ -157,19 +176,17 @@ export default function CodeOptimizer() {
           initial={{ opacity: 0, x: 30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.4 }}
-          className="flex-1 p-5 bg-gray-800 rounded-lg shadow-lg flex flex-col"
+          className="flex-1 p-5 bg-sidebar text-card-foreground rounded-lg shadow-2xl flex flex-col"
         >
           <div className="flex items-center gap-2 mb-3">
             <Terminal className="size-5 text-green-400" />
             <h2 className="text-lg font-semibold">Optimized Code</h2>
           </div>
           <div className="flex">
-            {/* Line numbering and Textarea */}
-            <Numbering text={optimizedCode} />
             <Textarea
               value={optimizedCode}
               readOnly
-              className="flex-grow min-h-[300px] p-3 bg-gray-900 text-white border border-gray-700 rounded-lg resize-none"
+              className="flex-grow min-h-[681px] p-3 bg-background text-foreground border border-border rounded-lg resize-none"
             />
           </div>
         </motion.div>

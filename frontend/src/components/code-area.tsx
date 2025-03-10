@@ -11,8 +11,10 @@ export default function CodeOptimizer() {
   const [inputCode, setInputCode] = useState('')
   const [optimizedCode, setOptimizedCode] = useState('')
   const [selectedLanguage, setSelectedLanguage] = useState('C++')
+  const [errorMessage, setErrorMessage] = useState('')
 
-  function handleOptimize() {
+  async function handleOptimize() {
+    setErrorMessage('')
     const languageRoutes: { [key: string]: string } = {
       'C++': 'cpp',
       C: 'c',
@@ -21,15 +23,24 @@ export default function CodeOptimizer() {
     }
 
     const selectedRoute = languageRoutes[selectedLanguage]
+    try {
+      const response = await fetch(`http://localhost:5000/optimize/${selectedRoute}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: inputCode, language: selectedLanguage }),
+      })
 
-    fetch(`http://localhost:5000/optimize/${selectedRoute}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code: inputCode }),
-    })
-      .then((response) => response.json())
-      .then((data) => setOptimizedCode(data.optimized_code))
-      .catch((error) => console.error('Error optimizing code:', error))
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`Server Error: ${response.status} ${response.statusText} - ${errorText}`)
+      }
+
+      const data = await response.json()
+      setOptimizedCode(data.optimized_code || 'No optimizations found.')
+    } catch (error) {
+      setErrorMessage((error as Error).message)
+      console.error('Error optimizing code:', (error as Error).message)
+    }
   }
 
   return (
@@ -54,24 +65,16 @@ export default function CodeOptimizer() {
                 <div className="flex items-center justify-between gap-5">
                   <h2 className="text-lg font-semibold">Paste Your Code</h2>
                   <div className="text-2xl">
-                    <Select onValueChange={(value) => setSelectedLanguage(value)} value={selectedLanguage}>
-                      <SelectTrigger className="w-[120px] p-2 bg-gray-800 text-white border border-gray-700 rounded-lg shadow-md hover:bg-gray-700 focus:outline-none">
+                    <Select onValueChange={setSelectedLanguage} value={selectedLanguage}>
+                      <SelectTrigger className="w-[120px] p-2 bg-gray-800 text-white border border-gray-700 rounded-lg shadow-md">
                         <SelectValue placeholder="Select Language" />
                       </SelectTrigger>
-
                       <SelectContent className="bg-gray-900 text-white rounded-lg shadow-lg">
-                        <SelectItem value="C" className="hover:bg-gray-700 p-2 rounded-md">
-                          C
-                        </SelectItem>
-                        <SelectItem value="C++" className="hover:bg-gray-700 p-2 rounded-md">
-                          C++
-                        </SelectItem>
-                        <SelectItem value="Java" className="hover:bg-gray-700 p-2 rounded-md">
-                          Java
-                        </SelectItem>
-                        <SelectItem value="Python" className="hover:bg-gray-700 p-2 rounded-md">
-                          Python
-                        </SelectItem>
+                        {['C', 'C++', 'Java', 'Python'].map((lang) => (
+                          <SelectItem key={lang} value={lang} className="hover:bg-gray-700 p-2 rounded-md">
+                            {lang}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -83,8 +86,8 @@ export default function CodeOptimizer() {
                 <Textarea
                   value={inputCode}
                   onChange={(e) => setInputCode(e.target.value)}
-                  placeholder="Paste your code here..."
-                  className="flex-grow min-h-[300px] p-3 bg-gray-900 text-foreground border border-gray-700 rounded-lg resize-none"
+                  placeholder="Paste your code here . . . ."
+                  className="flex-grow min-h-[300px] p-3 bg-gray-900 text-foreground border border-gray-700 rounded-lg resize-none font-mono"
                 />
               </div>
               <Button onClick={handleOptimize} className="mt-4 bg-blue-500 hover:bg-blue-600 w-full cursor-pointer">

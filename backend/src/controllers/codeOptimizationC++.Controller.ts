@@ -1,6 +1,4 @@
-// src/controllers/codeOptimizationController.ts
-
-export const optimizeCode = (req: any, res: any) => {
+export const optimizeCplusplusCode = (req: any, res: any) => {
   const { code } = req.body;
 
   if (!code) {

@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import { Loader2, Play } from 'lucide-react'
 
 function OptimizeButton() {
-  const { getCode, isRunning, language, setOutput, setError } = useCodeEditorStore()
+  const { getCode, isOptimizing, setIsOptimizing, language, setOutput, setError } = useCodeEditorStore()
 
   const getRouteForLanguage = (lang: string) => {
     switch (lang) {
@@ -28,7 +28,7 @@ function OptimizeButton() {
       setError('Invalid code or unsupported language selected.')
       return
     }
-
+    setIsOptimizing(true)
     setOutput('Optimizing code...')
 
     try {
@@ -44,6 +44,7 @@ function OptimizeButton() {
 
       if (response.ok) {
         setOutput(data.optimized_code || 'Optimization successful, but no code returned.')
+        setIsOptimizing(false)
       } else {
         setError(data.error || 'Failed to optimize code.')
       }
@@ -56,7 +57,7 @@ function OptimizeButton() {
   return (
     <motion.button
       onClick={handleOptimize}
-      disabled={isRunning}
+      disabled={isOptimizing}
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
       className="group relative inline-flex items-center gap-2.5 px-5 py-2.5
@@ -65,7 +66,7 @@ function OptimizeButton() {
       <div className="absolute inset-0 bg-gradient-to-r from-green-600 to-blue-500 rounded-xl opacity-100 transition-opacity group-hover:opacity-90" />
 
       <div className="relative flex items-center gap-2.5">
-        {isRunning ? (
+        {isOptimizing ? (
           <>
             <Loader2 className="w-4 h-4 animate-spin text-white/70" />
             <span className="text-sm font-medium text-white/90">Optimizing...</span>

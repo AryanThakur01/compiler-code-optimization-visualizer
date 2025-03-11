@@ -30,6 +30,7 @@ export const useCodeEditorStore = create<CodeEditorState>((set, get) => {
     ...initialState,
     output: '',
     isRunning: false,
+    isOptimizing: false,
     error: null,
     editor: null,
     executionResult: null,
@@ -38,7 +39,7 @@ export const useCodeEditorStore = create<CodeEditorState>((set, get) => {
 
     setOutput: (output: string) => set({ output, error: null }),
     setError: (error: string) => set({ error, output: '' }),
-
+    setIsOptimizing: (state) => set({ isOptimizing: state }),
     setEditor: (editor: Monaco) => {
       const savedCode = localStorage.getItem(`editor-code-${get().language}`)
       if (savedCode) editor.setValue(savedCode)
@@ -97,8 +98,6 @@ export const useCodeEditorStore = create<CodeEditorState>((set, get) => {
         })
 
         const data = await response.json()
-
-        console.error('data back from piston: ', data)
 
         // handle Api-level errors
         if (data.message) {

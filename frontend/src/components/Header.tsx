@@ -2,7 +2,7 @@ import { Link } from '@tanstack/react-router'
 import { Code2, Home } from 'lucide-react'
 import ThemeSelector from './ThemeSelector'
 import LanguageSelector from './LanguageSelector'
-// import RunButton from './RunButton'
+import RunButton from './RunButton'
 
 function Header() {
   return (
@@ -46,7 +46,7 @@ function Header() {
             <ThemeSelector />
             <LanguageSelector />
           </div>
-          {/* <RunButton /> */}
+          <RunButton />
         </div>
       </div>
     </div>

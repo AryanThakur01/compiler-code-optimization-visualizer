@@ -6,12 +6,14 @@ import { useEffect } from 'react'
 import { motion } from 'framer-motion'
 import useMounted from '@/hooks/useMounted'
 import { EditorViewSkeleton } from './EditorSkeleton'
+import TypingSound from './typingSound'
 
 const EditorPanel = () => {
   // const [isShareDialogOpen, setIsShareDialogOpen] = useState(false)
   const { language, theme, fontSize, editor, setFontSize, setEditor } = useCodeEditorStore()
 
   const mounted = useMounted()
+  const { playTypingSound } = TypingSound()
 
   useEffect(() => {
     const savedCode = localStorage.getItem(`editor-code-${language}`)
@@ -31,7 +33,10 @@ const EditorPanel = () => {
   }
 
   const handleEditorChange = (value: string | undefined) => {
-    if (value) localStorage.setItem(`editor-code-${language}`, value)
+    if (value) {
+      localStorage.setItem(`editor-code-${language}`, value)
+      playTypingSound()
+    }
   }
 
   const handleFontSizeChange = (newSize: number) => {

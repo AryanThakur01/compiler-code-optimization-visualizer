@@ -1,8 +1,9 @@
 import { Link } from '@tanstack/react-router'
-import { Code2, Home } from 'lucide-react'
+import { Home } from 'lucide-react'
 import ThemeSelector from './ThemeSelector'
 import LanguageSelector from './LanguageSelector'
 import RunButton from './RunButton'
+import OptimizeButton from './OptimizeButton'
 
 function Header() {
   return (
@@ -27,8 +28,8 @@ function Header() {
             </div>
           </Link>
           {/* Navigation */}
-          <nav className="flex items-center space-x-1">
-            <Link
+          {/* <nav className="flex items-center space-x-1"> */}
+          {/* <Link
               to="/snippets"
               className="relative group flex items-center gap-2 px-4 py-1.5 rounded-lg text-gray-300 bg-gray-800/50 
                 hover:bg-blue-500/10 border border-gray-800 hover:border-blue-500/50 transition-all duration-300 shadow-lg overflow-hidden"
@@ -38,8 +39,8 @@ function Header() {
                 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity"
               />
               <Code2 className="w-4 h-4 relative z-10 group-hover:rotate-3 transition-transform" />
-            </Link>
-          </nav>
+            </Link> */}
+          {/* </nav> */}
         </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-3">
@@ -47,6 +48,7 @@ function Header() {
             <LanguageSelector />
           </div>
           <RunButton />
+          <OptimizeButton />
         </div>
       </div>
     </div>

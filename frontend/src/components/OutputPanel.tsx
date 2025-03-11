@@ -20,7 +20,7 @@ const OutputPanel = () => {
   return (
     <div className="relative bg-[#181825] rounded-xl p-4 ring-1 ring-gray-800/50">
       {/* Header */}
-      <div className="flex items-center justify-between mb-3">
+      <div className="p-2.5 flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <div className="flex items-center justify-center w-6 h-6 rounded-lg bg-[#1e1e2e] ring-1 ring-gray-800/50">
             <Terminal className="w-4 h-4 text-blue-400" />

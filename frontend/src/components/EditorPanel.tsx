@@ -1,7 +1,7 @@
 import { defineMonacoThemes, LANGUAGE_CONFIG } from '@/constants'
 import { useCodeEditorStore } from '@/store/useCodeEditorStore'
 import { Editor } from '@monaco-editor/react'
-import { RotateCcwIcon, ShareIcon, TypeIcon } from 'lucide-react'
+import { RotateCcwIcon, TypeIcon } from 'lucide-react'
 import { useEffect } from 'react'
 import { motion } from 'framer-motion'
 import useMounted from '@/hooks/useMounted'
@@ -89,7 +89,7 @@ const EditorPanel = () => {
             </motion.button>
 
             {/* Share Button */}
-            <motion.button
+            {/* <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               // onClick={() => setIsShareDialogOpen(true)}
@@ -98,7 +98,7 @@ const EditorPanel = () => {
             >
               <ShareIcon className="size-4 text-white" />
               <span className="text-sm font-medium text-white ">Share</span>
-            </motion.button>
+            </motion.button> */}
           </div>
         </div>
         {/* Editor */}

@@ -1,5 +1,3 @@
-import { getOptimizedPattern } from "../optimizedPatterns";
-
 export const optimizeCCode = (req: any, res: any) => {
   const { code } = req.body;
 
@@ -7,27 +5,41 @@ export const optimizeCCode = (req: any, res: any) => {
     return res.status(400).json({ error: "No code provided" });
   }
 
-  // Apply basic optimizations
-  let optimizedCode = optimizeCCodeLogic(code);
+  const optimizedCode = optimizeCCodeLogic(code);
 
-  // Apply dataset-based optimizations
-  optimizedCode = getOptimizedPattern(optimizedCode);
-
-  // Send optimized code response
   res.json({ optimized_code: optimizedCode });
 };
 
-// Function for basic C code optimizations
 const optimizeCCodeLogic = (code: string): string => {
   let optimized = code.trim();
 
-  optimized = optimized.replace(/\n{2,}/g, "\n"); // Remove extra blank lines
-  optimized = optimized.replace(/\/\/.*$/gm, ""); // Remove single-line comments
-  optimized = optimized.replace(/\/\*[\s\S]*?\*\//g, ""); // Remove multi-line comments
-  optimized = optimized.replace(/\s*([=+\-*/<>])\s*/g, "$1"); // Remove spaces around operators
-  optimized = optimized.replace(/\b(\w+)\s*=\s*\1\s*\+\s*1;/g, "$1++;"); // x = x + 1 → x++
-  optimized = optimized.replace(/\b(\w+)\s*=\s*\1\s*-\s*1;/g, "$1--;"); // x = x - 1 → x--
-  optimized = optimized.replace(/\bint\s+[a-zA-Z_]\w*\s*=\s*0\s*;/g, ""); // Remove unused int variables
+  // Ensure newlines after #include statements
+  optimized = optimized.replace(/(#include\s*<.*?>)(\S)/g, "$1\n$2");
 
-  return optimized;
+  // Ensure function definitions start on a new line
+  optimized = optimized.replace(
+    /(\bvoid\b|\bint\b|\bfloat\b|\bchar\b|\bdouble\b|\bstruct\b)\s+(\w+)\s*\(/g,
+    "\n$1 $2("
+  );
+
+  // Preserve proper indentation (prevent everything from collapsing)
+  optimized = optimized.replace(/;\s*(?!\n)/g, ";\n");
+
+  // Remove comments
+  optimized = optimized.replace(/\/\/.*$/gm, "");
+  optimized = optimized.replace(/\/\*[\s\S]*?\*\//g, "");
+
+  // Remove unnecessary spaces around operators
+  optimized = optimized.replace(/\s*([=+\-*/<>])\s*/g, " $1 ");
+
+  // Ensure `int` is preserved in loops
+  optimized = optimized.replace(
+    /\bfor\s*\(\s*([a-zA-Z_]\w*)\s*=\s*0;/g,
+    "for (int $1 = 0;"
+  );
+
+  // Ensure proper indentation using spaces
+  optimized = optimized.replace(/\n(\s*)\}/g, "\n$1}\n");
+
+  return optimized.trim();
 };

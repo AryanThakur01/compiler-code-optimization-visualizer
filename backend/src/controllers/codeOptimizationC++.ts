@@ -1,32 +1,19 @@
-export const optimizeCplusplusCode = (req: any, res: any) => {
+import axios from "axios";
+
+export const optimizeCplusplusCode = async (req: any, res: any) => {
   const { code } = req.body;
 
   if (!code) {
     return res.status(400).json({ error: "No code provided" });
   }
 
-  // Basic optimization (just an example)
-  const optimizedCode = optimizeCPlusPlusCode(code);
-
-  // Send the optimized code as response
-  res.json({ optimized_code: optimizedCode });
-};
-
-// Function to simulate basic C++ code optimization
-const optimizeCPlusPlusCode = (code: string) => {
-
-  // Trim extra spaces
-  let optimized = code.trim();
-
-  // Remove extra newlines
-  optimized = optimized.replace(/\n{2,}/g, "\n");
-
-  // Example: Remove comments from code (just for demonstration)
-  optimized = optimized.replace(/\/\/.*$/gm, ""); // Removes single-line comments
-
-  // Simulate other optimizations (like removing unused variables)
-  optimized = optimized.replace(/int\s+[a-zA-Z_]\w*\s*=\s*0;/g, ""); // remove initialized zero int variables
-
-  // Return the optimized code
-  return optimized;
+  try {
+    const response = await axios.post("http://localhost:5001/analyze", {
+      code,
+    });
+    return res.json({ optimized_code: response.data.optimized_code });
+  } catch (error) {
+    console.error("Error in Python API call:", error);
+    return res.status(500).json({ error: "Optimization failed" });
+  }
 };

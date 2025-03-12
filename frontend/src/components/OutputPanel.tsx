@@ -14,7 +14,7 @@ const OutputPanel = () => {
     await navigator.clipboard.writeText(error || output)
     setIsCopied(true)
 
-    setTimeout(() => setIsCopied(false), 200)
+    setTimeout(() => setIsCopied(false), 5000)
   }
 
   return (

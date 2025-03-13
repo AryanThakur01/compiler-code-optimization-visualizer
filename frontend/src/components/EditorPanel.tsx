@@ -102,16 +102,15 @@ const EditorPanel = () => {
           </div>
         </div>
         {/* Editor */}
-        <div className="relative group rounded-xl overflow-hidden ring-1 ring-white/[0.05]">
+        <div className="relative group rounded-xl overflow-hidden ring-1 ring-white/[0.05] h-auto min-h-[300px] max-h-[579px]">
           <Editor
-            height="600px"
+            height="600px" // Adjusts to screen size
             language={LANGUAGE_CONFIG[language].monacoLanguage}
             onChange={handleEditorChange}
             theme={theme}
             beforeMount={defineMonacoThemes}
             onMount={(editor) => setEditor(editor)}
             options={{
-              minimap: { enabled: false },
               fontSize,
               automaticLayout: true,
               scrollBeyondLastLine: false,
@@ -121,15 +120,11 @@ const EditorPanel = () => {
               fontLigatures: true,
               cursorBlinking: 'smooth',
               smoothScrolling: true,
-              contextmenu: true,
               renderLineHighlight: 'all',
               lineHeight: 1.6,
               letterSpacing: 0.5,
               roundedSelection: true,
-              scrollbar: {
-                verticalScrollbarSize: 8,
-                horizontalScrollbarSize: 8,
-              },
+              scrollbar: { verticalScrollbarSize: 8, horizontalScrollbarSize: 8 },
             }}
           />
         </div>

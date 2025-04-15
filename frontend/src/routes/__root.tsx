@@ -1,19 +1,22 @@
 import { Navbar } from '@/components/navbar'
+import Header from '@/components/Header'
 import { ThemeProvider } from '@/components/theme-provider'
-import { createRootRoute, Outlet } from '@tanstack/react-router'
-import { TanStackRouterDevtools } from '@tanstack/router-devtools'
+import { createRootRoute, Outlet, useMatchRoute } from '@tanstack/react-router'
+// import { TanStackRouterDevtools } from '@tanstack/router-devtools'
 
-export const Route = createRootRoute({
-  component: () => (
+function Layout() {
+  const matchRoute = useMatchRoute()
+  const isCodeArea = matchRoute({ to: '/CodeArea' })
+
+  return (
     <ThemeProvider>
-      <div className="container mx-auto">
-        <Navbar />
-      </div>
+      <div className="mx-auto">{isCodeArea ? <Header /> : <Navbar />}</div>
       <hr />
-      <div className="container mx-auto">
+      <div className="mx-auto">
         <Outlet />
-        {import.meta.env.DEV ? <TanStackRouterDevtools /> : null}
       </div>
     </ThemeProvider>
-  ),
-})
+  )
+}
+
+export const Route = createRootRoute({ component: Layout })

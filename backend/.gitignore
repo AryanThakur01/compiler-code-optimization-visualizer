@@ -1,2 +1,21 @@
-node_modules
-.git
+# Node.js dependencies
+node_modules/
+
+# Optional: npm log files
+npm-debug.log*
+yarn-error.log*
+
+# TypeScript build output
+dist/
+build/
+
+# Environment files (use with caution)
+.env
+
+# IDE/Editor files
+.vscode/
+.idea/
+
+# OS-specific files
+.DS_Store
+Thumbs.db

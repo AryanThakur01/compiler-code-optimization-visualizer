@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "ts-node src/app.ts"
+    "dev": "nodemon src/app.ts"
   },
   "keywords": [],
   "author": "",
@@ -21,7 +21,10 @@
     "helmet": "^8.0.0",
     "kaggle-node": "^1.1.2",
     "morgan": "^1.10.0",
-    "path": "^0.12.7"
+    "nodemon": "^3.1.9",
+    "path": "^0.12.7",
+    "tree-sitter": "^0.22.4",
+    "tree-sitter-c": "^0.23.5"
   },
   "devDependencies": {
     "@types/compression": "^1.7.5",

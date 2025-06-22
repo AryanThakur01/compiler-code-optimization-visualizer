@@ -36,7 +36,7 @@ function RouteComponent() {
         </p>
         <div className="flex flex-wrap justify-center md:justify-start mt-6 gap-4">
           <Link to="/CodeArea" className={cn(buttonVariants({ variant: 'default' }), 'w-36 md:w-40 text-base')}>
-            Get Started 🚀
+            Get Started
           </Link>
           <a
             href="https://github.com"

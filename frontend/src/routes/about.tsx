@@ -30,7 +30,7 @@ function RouteComponent() {
             transition={{ delay: 0.5, duration: 0.9, ease: [0.25, 1, 0.5, 1] }}
             className="my-4 text-base sm:text-lg md:text-xl lg:text-2xl w-11/12 sm:w-3/4 lg:max-w-5xl mx-auto"
           >
-            We are a team of innovators, dedicated to turning ideas into reality with passion and precision. 🚀
+            We are a team of innovators, dedicated to turning ideas into reality with passion and precision.
           </motion.p>
 
           {/* Team Grid with Proper Spacing */}

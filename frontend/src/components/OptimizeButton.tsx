@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import { Loader2, Play } from 'lucide-react'
 
 function OptimizeButton() {
-  const { getCode, isOptimizing, setIsOptimizing, language, setOutput, setError, setOptimizedResult, executionResult } = useCodeEditorStore()
+  const { getCode, isOptimizing, setIsOptimizing, language, setOutput, setError, setOptimizedResult } = useCodeEditorStore()
 
   const getRouteForLanguage = (lang: string) => {
     switch (lang) {
@@ -43,14 +43,22 @@ function OptimizeButton() {
       const data = await response.json()
 
       if (response.ok) {
-        setOutput(data.optimized_code || 'Optimization successful, but no code returned.')
-        setIsOptimizing(false)
+        // setOutput(data.optimized_code || 'Optimization successful, but no code returned.')
+        // setIsOptimizing(false)
+
+        const original = data.originalCode
+        const optimized = data.optimized_code
+
+        setOptimizedResult(original, optimized)
+        setOutput(optimized)
       } else {
         setError(data.error || 'Failed to optimize code.')
       }
     } catch (error) {
       setError('Error optimizing code.')
       console.error('Optimization Error:', error)
+    } finally {
+      setIsOptimizing(false)
     }
   }
 

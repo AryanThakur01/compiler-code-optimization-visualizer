@@ -1,3 +1,6 @@
+import { execSync } from "child_process";
+import { CppParser } from "../services/CppParser";
+
 export const optimizeCppCode = (req: any, res: any) => {
   const { code } = req.body;
 
@@ -5,32 +8,60 @@ export const optimizeCppCode = (req: any, res: any) => {
     return res.status(400).json({ error: "No code provided" });
   }
 
-  const optimizedCode = optimizeCpp(code);
+  const parser = new CppParser();
+  const tree = parser.parse(code);
+  const ir = parser.createIr(tree.rootNode);
 
-  res.json({ optimized_code: optimizedCode });
+  let originalCode = parser.generateCodeFromIR(ir);
+  const optimizedCodeIr = parser.optimizeCodeFromIR(ir);
+  let optimizedCode = parser.generateCodeFromIR(optimizedCodeIr);
+
+  try {
+    optimizedCode = execSync("clang-format", {
+      input: optimizedCode,
+    }).toString();
+    originalCode = execSync("clang-format", { input: originalCode }).toString();
+  } catch (err) {
+    return res.status(500).json({ error: "Clang formatting failed" });
+  }
+
+  res.json({
+    originalCode,
+    optimized_code: optimizedCode,
+  });
 };
 
-// Function to simulate basic C++ code optimization
-const optimizeCpp = (code: string): string => {
+// Optional fallback inline optimization (if parser not used)
+const optimizeCppCodeLogic = (code: string): string => {
   let optimized = code.trim();
 
-  // Remove extra newlines
-  optimized = optimized.replace(/\n{2,}/g, "\n");
+  // Newline after includes
+  optimized = optimized.replace(/(#include\s*<.*?>)(\S)/g, "$1\n$2");
 
-  // Remove single-line comments (//...)
-  optimized = optimized.replace(/\/\/.*$/gm, "");
-
-  // Remove multi-line comments (/* ... */)
-  optimized = optimized.replace(/\/\*[\s\S]*?\*\//g, "");
-
-  // Remove unused variable declarations like: int x = 0; or float y = 0.0;
+  // Function defs on new line
   optimized = optimized.replace(
-    /\b(int|float|double|char|bool|long)\s+\w+\s*=\s*0(\.0)?\s*;/g,
-    ""
+    /(\bvoid\b|\bint\b|\bfloat\b|\bchar\b|\bdouble\b|\bstruct\b|\bclass\b)\s+(\w+)\s*\(/g,
+    "\n$1 $2("
   );
 
-  // Remove trailing whitespaces
-  optimized = optimized.replace(/[ \t]+$/gm, "");
+  // Format semicolons
+  optimized = optimized.replace(/;\s*(?!\n)/g, ";\n");
 
-  return optimized;
+  // Remove single-line & multi-line comments
+  optimized = optimized.replace(/\/\/.*$/gm, "");
+  optimized = optimized.replace(/\/\*[\s\S]*?\*\//g, "");
+
+  // Remove extra spaces around operators
+  optimized = optimized.replace(/\s*([=+\-*/<>])\s*/g, " $1 ");
+
+  // Ensure loop var has `int` (simple cases)
+  optimized = optimized.replace(
+    /\bfor\s*\(\s*([a-zA-Z_]\w*)\s*=\s*0;/g,
+    "for (int $1 = 0;"
+  );
+
+  // Add newline before closing braces
+  optimized = optimized.replace(/\n(\s*)\}/g, "\n$1}\n");
+
+  return optimized.trim();
 };

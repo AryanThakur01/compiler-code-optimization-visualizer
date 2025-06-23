@@ -35,7 +35,16 @@ export const useCodeEditorStore = create<CodeEditorState>((set, get) => {
     editor: null,
     executionResult: null,
 
+    originalOutput: '',
+    optimizedOutput: '',
+
     getCode: () => get().editor?.getValue() || '',
+
+    setOptimizedResult: (original, optimized) =>
+      set({
+        originalOutput: original,
+        optimizedOutput: optimized,
+      }),
 
     setOutput: (output: string) => set({ output, error: null }),
     setError: (error: string) => set({ error, output: '' }),

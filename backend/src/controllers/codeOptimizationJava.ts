@@ -1,3 +1,6 @@
+import { execSync } from "child_process";
+import { JavaParser } from "../services/JavaParser";
+
 export const optimizeJavaCode = (req: any, res: any) => {
   const { code } = req.body;
 
@@ -5,34 +8,61 @@ export const optimizeJavaCode = (req: any, res: any) => {
     return res.status(400).json({ error: "No code provided" });
   }
 
-  // Basic optimization (just an example)
-  const optimizedCode = optimizeJava(code);
+  const parser = new JavaParser();
+  const tree = parser.parse(code);
+  const ir = parser.createIr(tree.rootNode);
 
-  // Send the optimized code as response
-  res.json({ optimized_code: optimizedCode });
+  let originalCode = parser.generateCodeFromIR(ir);
+  const optimizedCodeIr = parser.optimizeCodeFromIR(ir);
+  let optimizedCode = parser.generateCodeFromIR(optimizedCodeIr);
+
+  try {
+    originalCode = execSync("clang-format", { input: originalCode }).toString();
+    optimizedCode = execSync("clang-format", {
+      input: optimizedCode,
+    }).toString();
+  } catch (err) {
+    return res.status(500).json({ error: "Clang formatting failed" });
+  }
+
+  res.json({
+    originalCode,
+    optimized_code: optimizedCode,
+  });
 };
 
-// Function to simulate basic Java code optimization
-const optimizeJava = (code: string): string => {
+// Optional fallback inline optimization (if parser not used)
+const optimizeJavaCodeLogic = (code: string): string => {
   let optimized = code.trim();
 
-  // Remove extra newlines
-  optimized = optimized.replace(/\n{2,}/g, "\n");
+  // Newline after import and package
+  optimized = optimized.replace(/(import\s+[\w\.]+;)(\S)/g, "$1\n$2");
+  optimized = optimized.replace(/(package\s+[\w\.]+;)(\S)/g, "$1\n$2");
 
-  // Remove single-line comments (//...)
-  optimized = optimized.replace(/\/\/.*$/gm, "");
-
-  // Remove multi-line comments (/* ... */)
-  optimized = optimized.replace(/\/\*[\s\S]*?\*\//g, "");
-
-  // Remove unused variable declarations (e.g., int x = 0;)
+  // Class and method declarations on new line
   optimized = optimized.replace(
-    /\b(int|double|float|String|char|boolean)\s+\w+\s*=\s*0\s*;/g,
-    ""
+    /(\bpublic\b|\bprivate\b|\bprotected\b|\bstatic\b|\bclass\b|\bvoid\b|\bint\b|\bfloat\b|\bString\b)\s+(\w+)\s*\(/g,
+    "\n$1 $2("
   );
 
-  // Remove trailing spaces
-  optimized = optimized.replace(/[ \t]+$/gm, "");
+  // Format semicolons
+  optimized = optimized.replace(/;\s*(?!\n)/g, ";\n");
 
-  return optimized;
+  // Remove comments
+  optimized = optimized.replace(/\/\/.*$/gm, "");
+  optimized = optimized.replace(/\/\*[\s\S]*?\*\//g, "");
+
+  // Normalize space around operators
+  optimized = optimized.replace(/\s*([=+\-*/<>])\s*/g, " $1 ");
+
+  // Ensure loop var has type (basic case)
+  optimized = optimized.replace(
+    /\bfor\s*\(\s*([a-zA-Z_]\w*)\s*=\s*0;/g,
+    "for (int $1 = 0;"
+  );
+
+  // Newline before closing brace
+  optimized = optimized.replace(/\n(\s*)\}/g, "\n$1}\n");
+
+  return optimized.trim();
 };

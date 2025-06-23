@@ -38,6 +38,7 @@ export interface ExecutionResult {
 export interface CodeEditorState {
   language: string
   output: string
+  originalCode: string
   isRunning: boolean
   isOptimizing: boolean
   error: string | null
@@ -53,7 +54,7 @@ export interface CodeEditorState {
   setFontSize: (fontSize: number) => void
   runCode: () => Promise<void>
 
-  setOutput: (output: string) => void
+  setOutput: (output: string, originalCode?: string) => void
   setError: (error: string) => void
   setIsOptimizing: (state: boolean) => void
 }

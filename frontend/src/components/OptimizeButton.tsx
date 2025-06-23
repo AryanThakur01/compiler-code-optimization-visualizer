@@ -43,7 +43,7 @@ function OptimizeButton() {
       const data = await response.json()
 
       if (response.ok) {
-        setOutput(data.optimized_code || 'Optimization successful, but no code returned.')
+        setOutput(data.optimized_code || 'Optimization successful, but no code returned.', data.originalCode)
         setIsOptimizing(false)
       } else {
         setError(data.error || 'Failed to optimize code.')

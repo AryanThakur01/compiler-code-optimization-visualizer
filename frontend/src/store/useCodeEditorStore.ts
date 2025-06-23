@@ -28,6 +28,7 @@ export const useCodeEditorStore = create<CodeEditorState>((set, get) => {
   const initialState = getInitialState()
   return {
     ...initialState,
+    originalCode: '',
     output: '',
     isRunning: false,
     isOptimizing: false,
@@ -37,7 +38,7 @@ export const useCodeEditorStore = create<CodeEditorState>((set, get) => {
 
     getCode: () => get().editor?.getValue() || '',
 
-    setOutput: (output: string) => set({ output, error: null }),
+    setOutput: (output: string, originalCode: string) => set({ output, error: null, originalCode }),
     setError: (error: string) => set({ error, output: '' }),
     setIsOptimizing: (state) => set({ isOptimizing: state }),
     setEditor: (editor: Monaco) => {

@@ -175,10 +175,149 @@ export class CParser {
     return contents;
   }
 
+  private replaceLoopVariable(
+    nodes: IRRepresentation[],
+    varName: string,
+    value: string
+  ): IRRepresentation[] {
+    return nodes.map((node) => {
+      if (typeof node === "string") return node;
+
+      if (
+        node.type === "identifier" &&
+        typeof node.content === "string" &&
+        node.content === varName
+      ) {
+        return { ...node, content: value };
+      }
+
+      if (Array.isArray(node.content)) {
+        return {
+          ...node,
+          content: this.replaceLoopVariable(node.content, varName, value),
+        };
+      }
+
+      return node;
+    });
+  }
+
+  loopUnrolling(irNode: IRRepresentation): IRRepresentation {
+    const tryUnroll = (loopNode: IRRepresentation): IRRepresentation | null => {
+      if (!Array.isArray(loopNode.content)) return null;
+
+      let init: IRRepresentation | undefined;
+      let condition: IRRepresentation | undefined;
+      let update: IRRepresentation | undefined;
+      let body: IRRepresentation | undefined;
+      let isWhile = false;
+
+      if (loopNode.type === "for_statement" && loopNode.content.length >= 4) {
+        [init, condition, update, body] = loopNode.content;
+      } else if (
+        loopNode.type === "while_statement" &&
+        loopNode.content.length >= 2
+      ) {
+        condition = loopNode.content[0];
+        body = loopNode.content[1];
+        isWhile = true;
+      } else {
+        return null;
+      }
+
+      if (typeof body !== "string" && Array.isArray(body.content)) {
+        let varName = "";
+        let start = 0;
+        let end = 0;
+        let step = 1;
+
+        try {
+          if (!isWhile && typeof init !== "string") {
+            const match = JSON.stringify(init).match(/int\s+(\w+)\s*=\s*(\d+)/);
+            if (match) {
+              varName = match[1];
+              start = parseInt(match[2]);
+            }
+          }
+
+          const condMatch = JSON.stringify(condition).match(
+            /(\w+)\s*([<!=]+)\s*(\d+)/
+          );
+          if (condMatch) {
+            varName ||= condMatch[1];
+            const op = condMatch[2];
+            end = parseInt(condMatch[3]);
+
+            // We assume only <, <=, != conditions
+            const cmp = op.includes("!")
+              ? (a: number, b: number) => a !== b
+              : op.includes("<=")
+              ? (a: number, b: number) => a <= b
+              : (a: number, b: number) => a < b;
+
+            const updateText = isWhile
+              ? JSON.stringify(body)
+              : JSON.stringify(update);
+            const stepMatch = updateText.match(
+              /(\+\+|--|(\w+)\s*[\+\-]=\s*(\d+)|(\w+)\s*=\s*\w+\s*([\+\-])\s*(\d+))/
+            );
+            if (stepMatch) {
+              if (stepMatch[1] === "++") step = 1;
+              else if (stepMatch[1] === "--") step = -1;
+              else if (stepMatch[3])
+                step =
+                  parseInt(stepMatch[3]) *
+                  (stepMatch[2].includes("-") ? -1 : 1);
+              else if (stepMatch[6])
+                step = parseInt(stepMatch[6]) * (stepMatch[5] === "-" ? -1 : 1);
+            }
+
+            let unrolled: IRRepresentation[] = [];
+            for (let i = start; cmp(i, end); i += step) {
+              const cloned = JSON.parse(
+                JSON.stringify(body.content)
+              ) as IRRepresentation[];
+              const replaced = this.replaceLoopVariable(
+                cloned,
+                varName,
+                String(i)
+              );
+              unrolled.push(...replaced);
+            }
+
+            return {
+              type: "compound_statement",
+              content: unrolled,
+            };
+          }
+        } catch (e) {
+          return null;
+        }
+      }
+
+      return null;
+    };
+
+    const unrolled = tryUnroll(irNode);
+    if (unrolled) return unrolled;
+
+    if (Array.isArray(irNode.content)) {
+      return {
+        type: irNode.type,
+        content: irNode.content.map((child) =>
+          typeof child === "string" ? child : this.loopUnrolling(child)
+        ),
+      };
+    }
+
+    return irNode;
+  }
+
   optimizeCodeFromIR(ir: IRRepresentation): IRRepresentation {
     ir = this.codeFolding(ir);
     ir = this.deadCodeElimination(ir);
     ir.content = this.constantPropagatin(ir.content);
+    ir = this.loopUnrolling(ir);
 
     if (typeof ir.content === "string") return ir;
 

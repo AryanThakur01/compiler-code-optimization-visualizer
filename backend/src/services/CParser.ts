@@ -86,39 +86,6 @@ export class CParser {
     return helper(ir);
   }
 
-  codeFolding(irNode: IRRepresentation): IRRepresentation {
-    if (
-      irNode.type === "binary_expression" &&
-      Array.isArray(irNode.content) &&
-      irNode.content.length >= 3
-    ) {
-      let [arg1, op, arg2] = irNode.content;
-      if (typeof arg1 === "object" && arg1.type === "binary_expression") {
-        arg1 = this.codeFolding(arg1);
-      }
-
-      if (
-        typeof arg1 !== "string" &&
-        typeof op !== "string" &&
-        typeof arg2 !== "string" &&
-        typeof arg1.content === "string" &&
-        typeof arg2.content === "string" &&
-        typeof op.content === "string"
-      ) {
-        const numArg1 = Number(arg1.content);
-        const numArg2 = Number(arg2.content);
-        const operator = op.content;
-
-        if (!isNaN(numArg1) && !isNaN(numArg2)) {
-          return {
-            type: "number_literal",
-            content: String(eval(`${numArg1}${operator}${numArg2}`)),
-          };
-        }
-      }
-    }
-    return irNode;
-  }
 
   deadCodeElimination(irNode: IRRepresentation): IRRepresentation {
     if (!Array.isArray(irNode.content)) return irNode;
@@ -161,18 +128,6 @@ export class CParser {
       type: irNode.type,
       content: newContent,
     };
-  }
-
-  constantPropagatin(
-    contents: IRRepresentation["content"]
-  ): IRRepresentation["content"] {
-    if (typeof contents === "string") return contents;
-    const isInitDeclarator = contents.find((c) => c.type === "init_declarator");
-    if (!isInitDeclarator) {
-      return contents;
-    }
-    console.log(contents);
-    return contents;
   }
 
   private replaceLoopVariable(
@@ -313,16 +268,141 @@ export class CParser {
     return irNode;
   }
 
-  optimizeCodeFromIR(ir: IRRepresentation): IRRepresentation {
+  codeFolding(irNode: IRRepresentation): IRRepresentation {
+    if (
+      irNode.type === "binary_expression" &&
+      Array.isArray(irNode.content) &&
+      irNode.content.length >= 3
+    ) {
+      let [arg1, op, arg2] = irNode.content;
+      if (typeof arg1 === "object" && arg1.type === "binary_expression") {
+        arg1 = this.codeFolding(arg1);
+      }
+
+      if (
+        typeof arg1 !== "string" &&
+        typeof op !== "string" &&
+        typeof arg2 !== "string" &&
+        typeof arg1.content === "string" &&
+        typeof arg2.content === "string" &&
+        typeof op.content === "string"
+      ) {
+        const numArg1 = Number(arg1.content);
+        const numArg2 = Number(arg2.content);
+        const operator = op.content;
+
+        if (!isNaN(numArg1) && !isNaN(numArg2)) {
+          return {
+            type: "number_literal",
+            content: String(eval(`${numArg1}${operator}${numArg2}`)),
+          };
+        }
+      }
+    }
+    return irNode;
+  }
+
+  getConstantValue(
+    variableName: string,
+    knownConstants: Record<number, Record<string, string>>,
+    currentLevel: number
+  ) {
+    if (knownConstants[currentLevel] && knownConstants[currentLevel][variableName]) {
+      return knownConstants[currentLevel][variableName];
+    }
+
+    // Check in previous levels
+    for (let i = currentLevel - 1; i >= 0; i--) {
+      if (knownConstants[i] && knownConstants[i][variableName]) {
+        return knownConstants[i][variableName];
+      }
+    }
+
+    return null;
+  }
+
+  valueConstantSubstitution(
+    irContent: IRRepresentation,
+    knownConstants: Record<number, Record<string, string>>,
+    currentLevel: number
+  ): IRRepresentation {
+    if (irContent.type !== "binary_expression") return irContent
+    if (typeof irContent.content === "string") return irContent;
+    let left = irContent.content[0];
+    let right = irContent.content[2];
+
+    if (left.type === "binary_expression") left = this.valueConstantSubstitution(left, knownConstants, currentLevel);
+    else if (left.type === "identifier" && typeof left.content === 'string'){
+        left = {content: this.getConstantValue(left.content, knownConstants, currentLevel) || left.content, type: 'number_literal'};
+    }
+
+    if (right.type === "binary_expression") right = this.valueConstantSubstitution(right, knownConstants, currentLevel);
+    else if (right.type === "identifier" && typeof right.content === 'string') {
+        right = {content: this.getConstantValue(right.content, knownConstants, currentLevel) || right.content, type: 'number_literal'};
+    }
+
+    irContent.content[0] = left;
+    irContent.content[2] = right;
+
+    return irContent
+  }
+
+  processConstantPropagation(irContent: IRRepresentation[], knownConstants: Record<number, Record<string, string>> = {}, level = 0): IRRepresentation[] {
+    knownConstants[level] = {};
+
+    return irContent.map((node) => {
+      if (typeof node.content === "string") return node;
+      else if (node.type === "compound_statement" || node.type === "if_statement") {
+        const processedContent = this.processConstantPropagation(node.content, knownConstants, level + 1);
+        delete knownConstants[level]
+        return { ...node, content: processedContent };
+      } else if (node.type === "declaration" || node.type === "expression_statement") {
+        const declaratorIndex = node.content.findIndex(n => n.type === "init_declarator" || n.type === "assignment_expression");
+
+        if (declaratorIndex !== -1) {
+          const declarator = node.content[declaratorIndex];
+          if (typeof declarator.content !== "string") {
+            const identifierIndex = declarator.content.findIndex(n => n.type === "identifier");
+
+            if (identifierIndex !== -1) {
+                const identifier = declarator.content[identifierIndex];
+                let right = declarator.content[2];
+
+                if (right.type === "number_literal") knownConstants[level][String(identifier.content)] = String(right.content);
+                else if (right.type === "binary_expression") {
+                    right = this.valueConstantSubstitution(right, knownConstants, level);
+                    right = this.codeFolding(right);
+                    if (typeof right.content === "string") knownConstants[level][String(identifier.content)] = String(right.content);
+                    declarator.content[2] = right;
+                    node.content[declaratorIndex] = declarator;
+                }
+
+            }
+          }
+        }
+
+        return node;
+      } else {
+        const processedContent = this.processConstantPropagation(node.content, knownConstants, level);
+        return { type: node.type, content: processedContent }
+      }
+    });
+  }
+
+  constantPropagation(ir: IRRepresentation): IRRepresentation {
+    if (typeof ir.content === "string") return ir;
+    else  return {type: ir.type, content:  this.processConstantPropagation(ir.content)}
+  }
+
+  layer1Optimization(ir: IRRepresentation): IRRepresentation {
     ir = this.codeFolding(ir);
     ir = this.deadCodeElimination(ir);
-    ir.content = this.constantPropagatin(ir.content);
     ir = this.loopUnrolling(ir);
 
     if (typeof ir.content === "string") return ir;
 
     for (let i = 0; i < ir.content.length; i++) {
-      ir.content[i] = this.optimizeCodeFromIR(ir.content[i]);
+      ir.content[i] = this.layer1Optimization(ir.content[i]);
     }
 
     return ir;

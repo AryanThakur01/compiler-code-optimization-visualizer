@@ -32,7 +32,7 @@ function OptimizeButton() {
     setOutput('Optimizing code...')
 
     try {
-      const response = await fetch(`http://localhost:5000/optimize/${selectedRoute}`, {
+      const response = await fetch(`http://localhost:3001/optimize/${selectedRoute}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

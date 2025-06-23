@@ -14,10 +14,10 @@ export const optimizeCCode = (req: any, res: any) => {
   const ir = parser.createIr(tree.rootNode);
   let originalCode = parser.generateCodeFromIR(ir);
 
-  const optimizedCodeIr = parser.optimizeCodeFromIR(ir);
-  let optimizedCode = parser.generateCodeFromIR(optimizedCodeIr);
+  let optimizedCodeIr = parser.layer1Optimization(ir);
+  if (typeof optimizedCodeIr.content !== "string") optimizedCodeIr = parser.constantPropagation(optimizedCodeIr);
 
-  // console.log(JSON.stringify(ir, null, 2))
+  let optimizedCode = parser.generateCodeFromIR(optimizedCodeIr);
 
   // Code formatting
   optimizedCode = execSync("clang-format", { input: optimizedCode }).toString();

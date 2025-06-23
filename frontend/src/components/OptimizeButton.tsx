@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import { Loader2, Play } from 'lucide-react'
 
 function OptimizeButton() {
-  const { getCode, isOptimizing, setIsOptimizing, language, setOutput, setError } = useCodeEditorStore()
+  const { getCode, isOptimizing, setIsOptimizing, language, setOutput, setError, setOptimizedResult, executionResult } = useCodeEditorStore()
 
   const getRouteForLanguage = (lang: string) => {
     switch (lang) {

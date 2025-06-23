@@ -46,6 +46,12 @@ export interface CodeEditorState {
   editor: Monaco | null
   executionResult: ExecutionResult | null
 
+  originalOutput: string
+
+  optimizedOutput: string
+
+  setOptimizedResult: (original: string, optimized: string) => void
+
   setEditor: (editor: Monaco) => void
   getCode: () => string
   setLanguage: (language: string) => void

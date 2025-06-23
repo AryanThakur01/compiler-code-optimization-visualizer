@@ -1,14 +1,21 @@
+import DiffView from './DiffView'
 import EditorPanel from './EditorPanel'
 import OutputPanel from './OutputPanel'
 
 export default function CodeArea() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 w-full p-4">
+      {/* Editor and Output Side by Side */}
       <div className="w-full min-h-[400px] sm:min-h-[500px]">
         <EditorPanel />
       </div>
       <div className="w-full min-h-[400px] sm:min-h-[500px]">
         <OutputPanel />
+      </div>
+
+      {/* Full-width DiffView spans both columns */}
+      <div className="lg:col-span-2 w-full min-h-[400px] sm:min-h-[500px]">
+        <DiffView />
       </div>
     </div>
   )

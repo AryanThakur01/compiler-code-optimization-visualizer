@@ -40,6 +40,7 @@ export const useCodeEditorStore = create<CodeEditorState>((set, get) => {
     setOutput: (output: string) => set({ output, error: null }),
     setError: (error: string) => set({ error, output: '' }),
     setIsOptimizing: (state) => set({ isOptimizing: state }),
+
     setEditor: (editor: Monaco) => {
       const savedCode = localStorage.getItem(`editor-code-${get().language}`)
       if (savedCode) editor.setValue(savedCode)

@@ -1,7 +1,7 @@
-import Parser, {SyntaxNode} from "tree-sitter";
+import Parser, { SyntaxNode } from "tree-sitter";
 import C from "tree-sitter-c";
 
-import {IRRepresentation} from "../interfaces/CParser";
+import { IRRepresentation } from "../interfaces/CParser";
 
 export class CParser {
   private parser: Parser;
@@ -43,25 +43,26 @@ export class CParser {
       "system_lib_string",
     ]);
 
-    if (node.type !== 'comment') {
+    if (node.type !== "comment") {
       if (node.childCount === 0 || storeAsTextTypes.has(node.type)) {
         return {
-          type : node.type,
-          content : node.text,
+          type: node.type,
+          content: node.text,
         };
       } else {
-        const children: IRRepresentation[] =
-            node.children.map(child => this.createIr(child, level + 1));
+        const children: IRRepresentation[] = node.children.map((child) =>
+          this.createIr(child, level + 1)
+        );
         return {
-          type : node.type,
-          content : children,
+          type: node.type,
+          content: children,
         };
       }
     }
 
     return {
-      type : node.type,
-      content : "",
+      type: node.type,
+      content: "",
     };
   }
 
@@ -69,13 +70,16 @@ export class CParser {
     function helper(node: IRRepresentation): string {
       if (typeof node.content === "string") {
         let result = node.content;
-        if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(result) || result === "#" ||
-            result === "return") {
+        if (
+          /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(result) ||
+          result === "#" ||
+          result === "return"
+        ) {
           result += " ";
         }
         return result;
       } else {
-        return node.content.map(child => helper(child)).join("");
+        return node.content.map((child) => helper(child)).join("");
       }
     }
 
@@ -83,24 +87,32 @@ export class CParser {
   }
 
   codeFolding(irNode: IRRepresentation): IRRepresentation {
-    if (irNode.type === 'binary_expression' && Array.isArray(irNode.content) &&
-        irNode.content.length >= 3) {
+    if (
+      irNode.type === "binary_expression" &&
+      Array.isArray(irNode.content) &&
+      irNode.content.length >= 3
+    ) {
       let [arg1, op, arg2] = irNode.content;
-      if (typeof arg1 === 'object' && arg1.type === 'binary_expression') {
-        arg1 = this.codeFolding(arg1)
+      if (typeof arg1 === "object" && arg1.type === "binary_expression") {
+        arg1 = this.codeFolding(arg1);
       }
 
-      if (typeof arg1 !== 'string' && typeof op !== 'string' &&
-          typeof arg2 !== 'string' && typeof arg1.content === 'string' &&
-          typeof arg2.content === 'string' && typeof op.content === 'string') {
+      if (
+        typeof arg1 !== "string" &&
+        typeof op !== "string" &&
+        typeof arg2 !== "string" &&
+        typeof arg1.content === "string" &&
+        typeof arg2.content === "string" &&
+        typeof op.content === "string"
+      ) {
         const numArg1 = Number(arg1.content);
         const numArg2 = Number(arg2.content);
         const operator = op.content;
 
         if (!isNaN(numArg1) && !isNaN(numArg2)) {
           return {
-            type : 'number_literal',
-            content : String(eval(`${numArg1}${operator}${numArg2}`)),
+            type: "number_literal",
+            content: String(eval(`${numArg1}${operator}${numArg2}`)),
           };
         }
       }
@@ -109,10 +121,9 @@ export class CParser {
   }
 
   deadCodeElimination(irNode: IRRepresentation): IRRepresentation {
-    if (!Array.isArray(irNode.content))
-      return irNode;
+    if (!Array.isArray(irNode.content)) return irNode;
 
-    let newContent: string|IRRepresentation[] = [];
+    let newContent: string | IRRepresentation[] = [];
     let foundReturn = false;
 
     for (const item of irNode.content) {
@@ -128,9 +139,12 @@ export class CParser {
 
       if (foundReturn) {
         // Keep only syntax-critical elements (like closing braces)
-        if (optimized.type === "}" || optimized.type === ";" ||
-            (typeof optimized.content === "string" &&
-             (optimized.content === "}" || optimized.content === ";"))) {
+        if (
+          optimized.type === "}" ||
+          optimized.type === ";" ||
+          (typeof optimized.content === "string" &&
+            (optimized.content === "}" || optimized.content === ";"))
+        ) {
           newContent.push(optimized);
         }
         continue;
@@ -144,30 +158,168 @@ export class CParser {
     }
 
     return {
-      type : irNode.type,
-      content : newContent,
+      type: irNode.type,
+      content: newContent,
     };
   }
 
-  constantPropagatin(contents: IRRepresentation['content']):
-      IRRepresentation['content'] {
-    if (typeof contents === 'string')
-      return contents
-      const isInitDeclarator = contents.find(c => c.type === 'init_declarator')
-      if (!isInitDeclarator) {
-        return contents
+  constantPropagatin(
+    contents: IRRepresentation["content"]
+  ): IRRepresentation["content"] {
+    if (typeof contents === "string") return contents;
+    const isInitDeclarator = contents.find((c) => c.type === "init_declarator");
+    if (!isInitDeclarator) {
+      return contents;
+    }
+    console.log(contents);
+    return contents;
+  }
+
+  private replaceLoopVariable(
+    nodes: IRRepresentation[],
+    varName: string,
+    value: string
+  ): IRRepresentation[] {
+    return nodes.map((node) => {
+      if (typeof node === "string") return node;
+
+      if (
+        node.type === "identifier" &&
+        typeof node.content === "string" &&
+        node.content === varName
+      ) {
+        return { ...node, content: value };
       }
-    console.log(contents)
-    return contents
+
+      if (Array.isArray(node.content)) {
+        return {
+          ...node,
+          content: this.replaceLoopVariable(node.content, varName, value),
+        };
+      }
+
+      return node;
+    });
+  }
+
+  loopUnrolling(irNode: IRRepresentation): IRRepresentation {
+    const tryUnroll = (loopNode: IRRepresentation): IRRepresentation | null => {
+      if (!Array.isArray(loopNode.content)) return null;
+
+      let init: IRRepresentation | undefined;
+      let condition: IRRepresentation | undefined;
+      let update: IRRepresentation | undefined;
+      let body: IRRepresentation | undefined;
+      let isWhile = false;
+
+      if (loopNode.type === "for_statement" && loopNode.content.length >= 4) {
+        [init, condition, update, body] = loopNode.content;
+      } else if (
+        loopNode.type === "while_statement" &&
+        loopNode.content.length >= 2
+      ) {
+        condition = loopNode.content[0];
+        body = loopNode.content[1];
+        isWhile = true;
+      } else {
+        return null;
+      }
+
+      if (typeof body !== "string" && Array.isArray(body.content)) {
+        let varName = "";
+        let start = 0;
+        let end = 0;
+        let step = 1;
+
+        try {
+          if (!isWhile && typeof init !== "string") {
+            const match = JSON.stringify(init).match(/int\s+(\w+)\s*=\s*(\d+)/);
+            if (match) {
+              varName = match[1];
+              start = parseInt(match[2]);
+            }
+          }
+
+          const condMatch = JSON.stringify(condition).match(
+            /(\w+)\s*([<!=]+)\s*(\d+)/
+          );
+          if (condMatch) {
+            varName ||= condMatch[1];
+            const op = condMatch[2];
+            end = parseInt(condMatch[3]);
+
+            // We assume only <, <=, != conditions
+            const cmp = op.includes("!")
+              ? (a: number, b: number) => a !== b
+              : op.includes("<=")
+              ? (a: number, b: number) => a <= b
+              : (a: number, b: number) => a < b;
+
+            const updateText = isWhile
+              ? JSON.stringify(body)
+              : JSON.stringify(update);
+            const stepMatch = updateText.match(
+              /(\+\+|--|(\w+)\s*[\+\-]=\s*(\d+)|(\w+)\s*=\s*\w+\s*([\+\-])\s*(\d+))/
+            );
+            if (stepMatch) {
+              if (stepMatch[1] === "++") step = 1;
+              else if (stepMatch[1] === "--") step = -1;
+              else if (stepMatch[3])
+                step =
+                  parseInt(stepMatch[3]) *
+                  (stepMatch[2].includes("-") ? -1 : 1);
+              else if (stepMatch[6])
+                step = parseInt(stepMatch[6]) * (stepMatch[5] === "-" ? -1 : 1);
+            }
+
+            let unrolled: IRRepresentation[] = [];
+            for (let i = start; cmp(i, end); i += step) {
+              const cloned = JSON.parse(
+                JSON.stringify(body.content)
+              ) as IRRepresentation[];
+              const replaced = this.replaceLoopVariable(
+                cloned,
+                varName,
+                String(i)
+              );
+              unrolled.push(...replaced);
+            }
+
+            return {
+              type: "compound_statement",
+              content: unrolled,
+            };
+          }
+        } catch (e) {
+          return null;
+        }
+      }
+
+      return null;
+    };
+
+    const unrolled = tryUnroll(irNode);
+    if (unrolled) return unrolled;
+
+    if (Array.isArray(irNode.content)) {
+      return {
+        type: irNode.type,
+        content: irNode.content.map((child) =>
+          typeof child === "string" ? child : this.loopUnrolling(child)
+        ),
+      };
+    }
+
+    return irNode;
   }
 
   optimizeCodeFromIR(ir: IRRepresentation): IRRepresentation {
     ir = this.codeFolding(ir);
     ir = this.deadCodeElimination(ir);
     ir.content = this.constantPropagatin(ir.content);
+    ir = this.loopUnrolling(ir);
 
-    if (typeof ir.content === 'string')
-      return ir;
+    if (typeof ir.content === "string") return ir;
 
     for (let i = 0; i < ir.content.length; i++) {
       ir.content[i] = this.optimizeCodeFromIR(ir.content[i]);
@@ -178,8 +330,9 @@ export class CParser {
 
   private printNode(node: Parser.SyntaxNode, indent: number) {
     const padding = "  ".repeat(indent);
-    console.log(`${padding}${node.type} (${node.startPosition.row}:${
-        node.startPosition.column})`);
+    console.log(
+      `${padding}${node.type} (${node.startPosition.row}:${node.startPosition.column})`
+    );
 
     for (const child of node.namedChildren) {
       this.printNode(child, indent + 1);
